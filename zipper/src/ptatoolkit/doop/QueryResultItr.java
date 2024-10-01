@@ -15,7 +15,7 @@ import java.util.NoSuchElementException;
  */
 class QueryResultItr implements Iterator<List<String>> {
 
-    private static final String SEP = ", ";
+    private static final String SEP = "\t";
 
     private Query query;
     private BufferedReader reader;
@@ -69,6 +69,6 @@ class QueryResultItr implements Iterator<List<String>> {
     }
 
     private List<String> line2list(String line) {
-        return Arrays.asList(line.trim().split(SEP));
+        return Arrays.asList(line.split(SEP));
     }
 }
