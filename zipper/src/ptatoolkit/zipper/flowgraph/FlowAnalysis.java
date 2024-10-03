@@ -259,4 +259,8 @@ public class FlowAnalysis {
         System.out.printf("#Size of PFG of %s: %d nodes, %d edges.\n",
                 currentType, nrNodes, nrEdges);
     }
+
+    public DirectedGraphImpl<Node> getPollutionFlowGraph() {
+        return pollutionFlowGraph;
+    }
 }

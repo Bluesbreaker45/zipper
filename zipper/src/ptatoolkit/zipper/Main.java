@@ -75,6 +75,9 @@ public class Main {
                 zipperPCMOutput.getPath());
         System.out.println();
         writeZipperResults(pcm, zipperPCMOutput);
+        if (Global.isInsLevel()) {
+            zipper.getInsZipper().outputAllResults(opt, pcm);
+        }
     }
 
     public static PointsToAnalysis readPointsToAnalysis(Options opt) {

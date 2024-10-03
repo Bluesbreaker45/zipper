@@ -6,6 +6,7 @@ import ptatoolkit.pta.basic.Obj;
 import ptatoolkit.pta.basic.Type;
 import ptatoolkit.util.ANSIColor;
 import ptatoolkit.util.Timer;
+import ptatoolkit.zipper.analysis.ins.InsZipper;
 import ptatoolkit.zipper.flowgraph.FlowAnalysis;
 import ptatoolkit.zipper.flowgraph.InstanceFieldNode;
 import ptatoolkit.zipper.flowgraph.Node;
@@ -49,6 +50,7 @@ public class Zipper {
     private final AtomicInteger totalPFGNodes = new AtomicInteger(0);
     private final AtomicInteger totalPFGEdges = new AtomicInteger(0);
     private final Map<Type, Collection<Method>> pcmMap = new ConcurrentHashMap<>(1024);
+    private final InsZipper insZipper;
 
     public Zipper(PointsToAnalysis pta) {
         this.pta = pta;
@@ -57,6 +59,11 @@ public class Zipper {
         this.innerClsChecker = new InnerClassChecker(pta);
         this.ofg = buildObjectFlowGraph(pta);
         this.methodPts = getMethodPointsToSize(pta);
+        if (Global.isInsLevel()) {
+            this.insZipper = new InsZipper(pta);
+        } else {
+            this.insZipper = null;
+        }
     }
 
     public static void outputNumberOfClasses(PointsToAnalysis pta) {
@@ -207,6 +214,11 @@ public class Zipper {
         fa.initialize(type, inms, outms);
         inms.forEach(fa::analyze);
         Set<Node> flowNodes = fa.getFlowNodes();
+
+        if (Global.isInsLevel()) {
+            insZipper.analyze(flowNodes, fa.getPollutionFlowGraph());
+        }
+
         Set<Method> precisionCriticalMethods = getPrecisionCriticalMethods(type, flowNodes);
         if (Global.isDebug()) {
             if (!precisionCriticalMethods.isEmpty()) {
@@ -267,6 +279,9 @@ public class Zipper {
         totalPFGNodes.set(0);
         totalPFGEdges.set(0);
         pcmMap.clear();
+        if (Global.isInsLevel()) {
+            insZipper.reset();
+        }
     }
 
     private Map<Method, Integer> getMethodPointsToSize(PointsToAnalysis pta) {
@@ -285,5 +300,9 @@ public class Zipper {
         return methods.stream()
                 .mapToInt(methodPts::get)
                 .sum();
+    }
+
+    public InsZipper getInsZipper() {
+        return insZipper;
     }
 }
