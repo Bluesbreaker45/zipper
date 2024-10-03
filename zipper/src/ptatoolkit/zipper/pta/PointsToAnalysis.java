@@ -10,6 +10,7 @@ import ptatoolkit.util.Pair;
 import ptatoolkit.util.Triple;
 
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 
 public interface PointsToAnalysis {
@@ -149,4 +150,12 @@ public interface PointsToAnalysis {
      * @return all objects of the given type
      */
     Set<Obj> objectsOfType(Type type);
+
+    Set<Pair<Variable, Variable>> getCasts();
+
+    Map<Triple<Variable, Obj, Field>, Set<Variable>> getInstanceLoadCause();
+
+    Map<Pair<Variable, Obj>, Set<Variable>> getArrayLoadCause();
+
+    Field getArrayIndexRep();
 }

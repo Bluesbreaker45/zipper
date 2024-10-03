@@ -95,4 +95,44 @@ public class Global {
     public static void setListContext(boolean listContext) {
         Global.listContext = listContext;
     }
+
+    private static boolean insLevel = false;
+
+    public static void setInsLevel() {
+        insLevel = true;
+    }
+
+    public static boolean isInsLevel() {
+        return insLevel;
+    }
+
+    public static enum NewStrategy {
+        ALL, CRI_METHOD, PFG, NONE;
+    }
+
+    private static NewStrategy heapAllocationStrategy = NewStrategy.PFG;
+
+    public static void setHeapAllocationStrategy(String arg) {
+        switch (arg) {
+            case "all":
+                heapAllocationStrategy = NewStrategy.ALL;
+                break;
+            case "cri_method":
+                heapAllocationStrategy = NewStrategy.CRI_METHOD;
+                break;
+            case "pfg":
+                heapAllocationStrategy = NewStrategy.PFG;
+                break;
+            case "none":
+                heapAllocationStrategy = NewStrategy.NONE;
+                break;
+            default:
+                throw new IllegalArgumentException("Cannot recognize option for heap-allocation-strategy '"
+                + arg + "' . Following options are accepted: {all, cri_method, pfg, none}.");
+        }
+    }
+
+    public static NewStrategy getHeapAllocationStrategy() {
+        return heapAllocationStrategy;
+    }
 }

@@ -339,6 +339,12 @@ public class DoopPointsToAnalysis implements PointsToAnalysis {
 
         buildDirectSuperType(typeFactory);
 
+        if (Global.isInsLevel()) {
+            buildInstanceLoadCause();
+            buildArrayLoadCause();
+            buildCastInsn();
+        }
+
         typeObjects = new HashMap<>();
         typeMethods = new HashMap<>();
         allObjects().forEach(obj -> {
@@ -501,5 +507,62 @@ public class DoopPointsToAnalysis implements PointsToAnalysis {
             Type superType = typeFactory.get(list.get(1));
             directSuperType.put(type, superType);
         });
+    }
+
+    private final Set<Pair<Variable, Variable>> casts = new HashSet<>();
+
+    private void buildCastInsn() {
+        db.query(Query.ASSIGN_CAST).forEachRemaining(list -> {
+            Variable to = varFactory.get(list.get(1));
+            Variable from = varFactory.get(list.get(2));
+            casts.add(new Pair<>(to, from));
+        });
+    }
+
+    @Override
+    public Set<Pair<Variable, Variable>> getCasts() {
+        return casts;
+    }
+
+    private final Map<Triple<Variable, Obj, Field>, Set<Variable>> instanceLoadCause = new HashMap<>();
+
+    private void buildInstanceLoadCause() {
+        db.query(Query.INSTANCE_LOAD_CAUSE).forEachRemaining(list -> {
+            Variable to = varFactory.get(list.get(0));
+            Obj baseValue = objFactory.get(list.get(1));
+            Field sig = fieldFactory.get(list.get(2));
+            Variable base = varFactory.get(list.get(3));
+            Triple<Variable, Obj, Field> t = new Triple<>(to, baseValue, sig);
+            instanceLoadCause.putIfAbsent(t, new HashSet<>());
+            instanceLoadCause.get(t).add(base);
+        });
+    }
+
+    @Override
+    public Map<Triple<Variable, Obj, Field>, Set<Variable>> getInstanceLoadCause() {
+        return instanceLoadCause;
+    }
+
+    private final Map<Pair<Variable, Obj>, Set<Variable>> arrayLoadCause = new HashMap<>();
+
+    private void buildArrayLoadCause() {
+        db.query(Query.ARRAY_LOAD_CAUSE).forEachRemaining(list -> {
+            Variable to = varFactory.get(list.get(0));
+            Obj baseValue = objFactory.get(list.get(1));
+            Variable base = varFactory.get(list.get(2));
+            Pair<Variable, Obj> p = new Pair<>(to, baseValue);
+            arrayLoadCause.putIfAbsent(p, new HashSet<>());
+            arrayLoadCause.get(p).add(base);
+        });
+    }
+
+    @Override
+    public Map<Pair<Variable, Obj>, Set<Variable>> getArrayLoadCause() {
+        return arrayLoadCause;
+    }
+
+    @Override
+    public Field getArrayIndexRep() {
+        return fieldFactory.get(ARR_FIELD);
     }
 }

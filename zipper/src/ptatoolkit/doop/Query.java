@@ -114,7 +114,12 @@ public enum Query {
 	// type
 	APPLICATION_CLASS("ApplicationClass"),
 	DIRECT_SUPER_TYPE("DirectSuperclass"),
-	DECLARING_CLASS_ALLOCATION("DeclaringClassAllocation");
+	DECLARING_CLASS_ALLOCATION("DeclaringClassAllocation"),
+
+	// for ins-level
+	ASSIGN_CAST("OptAssignCast"),
+	INSTANCE_LOAD_CAUSE("InstanceLoadCause"),
+	ARRAY_LOAD_CAUSE("ArrayLoadCause");
 
 
     private final String expr;

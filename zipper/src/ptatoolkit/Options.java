@@ -167,6 +167,11 @@ public class Options {
 				Global.setTST(Integer.parseInt(args[i]));
 			} else if (args[i].equals("-list-context")) {
 				Global.setListContext(true);
+			} else if (args[i].equals("-ins-level")) {
+				Global.setInsLevel();	
+			} else if (args[i].equals("-heap-allocation-strategy")) {
+				i = shift(args, i);
+				Global.setHeapAllocationStrategy(args[i]);
 			} else {
 				throw new RuntimeException("Unexpected options: " + args[i]);
 			}
