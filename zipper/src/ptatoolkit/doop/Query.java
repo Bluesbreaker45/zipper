@@ -119,7 +119,11 @@ public enum Query {
 	// for ins-level
 	ASSIGN_CAST("OptAssignCast"),
 	INSTANCE_LOAD_CAUSE("InstanceLoadCause"),
-	ARRAY_LOAD_CAUSE("ArrayLoadCause");
+	ARRAY_LOAD_CAUSE("ArrayLoadCause"),
+
+	LOAD_INSTANCE_FIELD(""),
+	OPT_LOAD_ARRAY_INDEX(""),
+	;
 
 
     private final String expr;

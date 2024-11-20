@@ -157,5 +157,9 @@ public interface PointsToAnalysis {
 
     Map<Pair<Variable, Obj>, Set<Variable>> getArrayLoadCause();
 
+    Map<Variable, Set<Variable>> getInstanceLoadFromTo();
+
+    Map<Variable, Set<Variable>> getArrayLoadFromTo();
+
     Field getArrayIndexRep();
 }

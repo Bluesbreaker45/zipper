@@ -345,6 +345,10 @@ public class DoopPointsToAnalysis implements PointsToAnalysis {
             buildCastInsn();
         }
 
+        // Preparation for removal of approximation in FlowAnalysis
+        buildInstanceLoadFromTo();
+        buildArrayLoadFromTo();
+
         typeObjects = new HashMap<>();
         typeMethods = new HashMap<>();
         allObjects().forEach(obj -> {
@@ -509,9 +513,10 @@ public class DoopPointsToAnalysis implements PointsToAnalysis {
         });
     }
 
-    private final Set<Pair<Variable, Variable>> casts = new HashSet<>();
+    private Set<Pair<Variable, Variable>> casts;
 
     private void buildCastInsn() {
+        casts = new HashSet<>();
         db.query(Query.ASSIGN_CAST).forEachRemaining(list -> {
             Variable to = varFactory.get(list.get(1));
             Variable from = varFactory.get(list.get(2));
@@ -524,9 +529,10 @@ public class DoopPointsToAnalysis implements PointsToAnalysis {
         return casts;
     }
 
-    private final Map<Triple<Variable, Obj, Field>, Set<Variable>> instanceLoadCause = new HashMap<>();
+    private Map<Triple<Variable, Obj, Field>, Set<Variable>> instanceLoadCause;
 
     private void buildInstanceLoadCause() {
+        instanceLoadCause = new HashMap<>();
         db.query(Query.INSTANCE_LOAD_CAUSE).forEachRemaining(list -> {
             Variable to = varFactory.get(list.get(0));
             Obj baseValue = objFactory.get(list.get(1));
@@ -543,9 +549,10 @@ public class DoopPointsToAnalysis implements PointsToAnalysis {
         return instanceLoadCause;
     }
 
-    private final Map<Pair<Variable, Obj>, Set<Variable>> arrayLoadCause = new HashMap<>();
+    private Map<Pair<Variable, Obj>, Set<Variable>> arrayLoadCause;
 
     private void buildArrayLoadCause() {
+        arrayLoadCause = new HashMap<>();
         db.query(Query.ARRAY_LOAD_CAUSE).forEachRemaining(list -> {
             Variable to = varFactory.get(list.get(0));
             Obj baseValue = objFactory.get(list.get(1));
@@ -564,5 +571,39 @@ public class DoopPointsToAnalysis implements PointsToAnalysis {
     @Override
     public Field getArrayIndexRep() {
         return fieldFactory.get(ARR_FIELD);
+    }
+
+    private Map<Variable, Set<Variable>> instanceLoadFromTo;
+
+    private void buildInstanceLoadFromTo() {
+        instanceLoadFromTo = new HashMap<>();
+        db.query(Query.LOAD_INSTANCE_FIELD).forEachRemaining(list -> {
+            Variable from = varFactory.get(list.get(0));
+            Variable to = varFactory.get(list.get(2));
+            instanceLoadFromTo.putIfAbsent(from, new HashSet<>());
+            instanceLoadFromTo.get(from).add(to);
+        });
+    }
+
+    @Override
+    public Map<Variable, Set<Variable>> getInstanceLoadFromTo() {
+        return instanceLoadFromTo;
+    }
+
+    private Map<Variable, Set<Variable>> arrayLoadFromTo;
+
+    private void buildArrayLoadFromTo() {
+        arrayLoadFromTo = new HashMap<>();
+        db.query(Query.OPT_LOAD_ARRAY_INDEX).forEachRemaining(list -> {
+            Variable to = varFactory.get(list.get(0));
+            Variable from = varFactory.get(list.get(1));
+            arrayLoadFromTo.putIfAbsent(from, new HashSet<>());
+            arrayLoadFromTo.get(from).add(to);
+        });
+    }
+
+    @Override
+    public Map<Variable, Set<Variable>> getArrayLoadFromTo() {
+        return arrayLoadFromTo;
     }
 }

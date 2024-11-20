@@ -187,6 +187,29 @@ public class FlowAnalysis {
                             }
                         }
                     });
+                    Set<Variable> s = pta.getInstanceLoadFromTo().get(var);
+                    if (s != null) {
+                        s.stream().forEach(v -> {
+                            Node n = objectFlowGraph.nodeOf(v);
+                            if (n != null) {
+                                Edge unwrappedEdge =
+                                        new Edge(Kind.UNWRAPPED_FLOW, node, n);
+                                addWUEdge(node, unwrappedEdge);
+                            }
+                        });
+                    }
+                    s = pta.getArrayLoadFromTo().get(var);
+                    if (s != null) {
+                        s.stream().forEach(v -> {
+                            Node n = objectFlowGraph.nodeOf(v);
+                            if (n != null) {
+                                Edge unwrappedEdge =
+                                        new Edge(Kind.UNWRAPPED_FLOW, node, n);
+                                addWUEdge(node, unwrappedEdge);
+                            }
+                        });
+                    }
+                    assert pta.getInstanceLoadFromTo().get(var) == null || pta.getArrayLoadFromTo().get(var) == null;
                 }
             }
             List<Edge> nextEdges = new ArrayList<>();
@@ -220,28 +243,20 @@ public class FlowAnalysis {
                     case INSTANCE_STORE: {
                         InstanceFieldNode next = (InstanceFieldNode) edge.getTarget();
                         Obj base = next.getBase();
-                        if (base.getType().equals(currentType)) {
-                            // add wrapped flow edges to this variable
-                            if (Global.isEnableWrappedFlow()) {
-                                pta.methodsInvokedOn(currentType).stream()
-                                        .map(m -> ((InstanceMethod) m).getThis())
-                                        .map(objectFlowGraph::nodeOf)
-                                        .filter(n -> n != null) // filter this variable of native methods
-                                        .map(n -> new Edge(Kind.WRAPPED_FLOW, next, n))
-                                        .forEach(e -> addWUEdge(next, e));
+                        if (Global.isEnableWrappedFlow()) {
+                            pta.methodsInvokedOn(currentType).stream()
+                                    .map(m -> ((InstanceMethod) m).getThis())
+                                    .map(objectFlowGraph::nodeOf)
+                                    .filter(n -> n != null) // filter this variable of native methods
+                                    .map(n -> new Edge(Kind.WRAPPED_FLOW, next, n))
+                                    .forEach(e -> addWUEdge(next, e));
+                            Node assigned = objectFlowGraph.nodeOf(pta.assignedVarOf(base));
+                            if (assigned != null) {
+                                Edge e = new Edge(Kind.WRAPPED_FLOW, next, assigned);
+                                addWUEdge(next, e);
                             }
-                            nextEdges.add(edge);
-                        } else if (oag.allocateesOf(currentType).contains(base)) {
-                            // Optimization, similar as above.
-                            if (Global.isEnableWrappedFlow()) {
-                                Node assigned = objectFlowGraph.nodeOf(pta.assignedVarOf(base));
-                                if (assigned != null) {
-                                    Edge e = new Edge(Kind.WRAPPED_FLOW, next, assigned);
-                                    addWUEdge(next, e);
-                                }
-                            }
-                            nextEdges.add(edge);
                         }
+                            nextEdges.add(edge);
                     }
                     break;
                     default: {
