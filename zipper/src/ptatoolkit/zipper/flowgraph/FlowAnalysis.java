@@ -1,11 +1,13 @@
 package ptatoolkit.zipper.flowgraph;
 
 import ptatoolkit.Global;
+import ptatoolkit.doop.basic.DoopInstanceMethod;
 import ptatoolkit.pta.basic.InstanceMethod;
 import ptatoolkit.pta.basic.Method;
 import ptatoolkit.pta.basic.Obj;
 import ptatoolkit.pta.basic.Type;
 import ptatoolkit.pta.basic.Variable;
+import ptatoolkit.util.Pair;
 import ptatoolkit.util.graph.DirectedGraphImpl;
 import ptatoolkit.util.graph.Reachability;
 import ptatoolkit.zipper.analysis.ObjectAllocationGraph;
@@ -17,15 +19,19 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.Collectors;
 
 import static ptatoolkit.util.ANSIColor.BLUE;
 import static ptatoolkit.util.ANSIColor.GREEN;
 import static ptatoolkit.util.ANSIColor.RED;
 import static ptatoolkit.util.ANSIColor.color;
+import static ptatoolkit.util.NumberableComparators.pairComparator;
 
 public class FlowAnalysis {
 
@@ -71,16 +77,22 @@ public class FlowAnalysis {
     }
 
     public void analyze(Method startMethod) {
+        if (startMethod instanceof InstanceMethod) {
+            Node node = objectFlowGraph.nodeOf(((InstanceMethod) startMethod).getThis());
+            assert node != null: ((DoopInstanceMethod) startMethod);
+            queue.add(node);
+        }
         for (Variable param : startMethod.getParameters()) {
             Node node = objectFlowGraph.nodeOf(param);
             if (node != null) {
-                dfs(node);
+                queue.add(node);
             } else {
                 if (Global.isDebug()) {
                     System.out.println(param + " is absent in the flow graph.");
                 }
             }
         }
+        bfs();
 
         if (Global.isDebug()) {
             Set<Method> outMethods = new HashSet<>();
@@ -132,7 +144,18 @@ public class FlowAnalysis {
         reachability = null;
     }
 
-    private void dfs(Node node) {
+    private Queue<Node> queue = new LinkedList<>();
+
+    private void bfs() {
+        while (!queue.isEmpty()) {
+            Node n = queue.poll();
+            visit(n);
+        }
+    }
+
+    public static final Set<Pair<Variable, Variable>> senLocalAssigns = new ConcurrentSkipListSet<>(pairComparator); // (to, from)
+
+    private void visit(Node node) {
         if (Global.isDebug()) {
             System.out.println(color(BLUE, "Node ") + node);
         }
@@ -169,7 +192,12 @@ public class FlowAnalysis {
             List<Edge> nextEdges = new ArrayList<>();
             for (Edge edge : outEdgesOf(node)) {
                 switch (edge.getKind()) {
-                    case LOCAL_ASSIGN:
+                    case LOCAL_ASSIGN: {
+                        Pair<Variable, Variable> p = new Pair<>(((VarNode)(edge.getTarget())).getVar(), ((VarNode)(edge.getSource())).getVar());
+                        senLocalAssigns.add(p);
+                        nextEdges.add(edge);
+                    }
+                    break;
                     case UNWRAPPED_FLOW: {
                         nextEdges.add(edge);
                     }
@@ -224,7 +252,7 @@ public class FlowAnalysis {
             for (Edge nextEdge : nextEdges) {
                 Node nextNode = nextEdge.getTarget();
                 pollutionFlowGraph.addEdge(node, nextNode);
-                dfs(nextNode);
+                queue.add(nextNode);
             }
         }
     }

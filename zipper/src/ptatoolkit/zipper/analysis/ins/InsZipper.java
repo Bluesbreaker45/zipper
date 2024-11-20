@@ -22,6 +22,7 @@ import ptatoolkit.util.Pair;
 import ptatoolkit.util.Triple;
 import ptatoolkit.util.graph.DirectedGraphImpl;
 import ptatoolkit.zipper.doop.Attribute;
+import ptatoolkit.zipper.flowgraph.FlowAnalysis;
 import ptatoolkit.zipper.flowgraph.InstanceFieldNode;
 import ptatoolkit.zipper.flowgraph.Node;
 import ptatoolkit.zipper.flowgraph.VarNode;
@@ -141,6 +142,17 @@ public class InsZipper {
     }
 
     public void outputAllResults(Options opt, Set<Method> pcm) throws FileNotFoundException {
+        Set<String> pcms = pcm.stream().map(Method::toString).collect(Collectors.toSet());
+        Set<Pair<Variable, Variable>> forwardSenLocalAssigns = FlowAnalysis.senLocalAssigns;
+        forwardSenLocalAssigns.stream() // the forwardSenLocalAssigns that is not in a senMethod takes 8/13
+                // .filter(p -> {
+                //     String varName = p.getFirst().toString();
+                //     int left = varName.indexOf("<");
+                //     int right = varName.indexOf(">");
+                //     String methodName = varName.substring(left, right + 1);
+                //     return pcms.contains(methodName);
+                // })
+                .forEach(senLocalAssigns::add);
         String SEP = "\t";
 
         // change (to, from) to (from, to) in order to adapt to the ins-level analysis
